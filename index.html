@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Real People Don't Talk Like That — editable</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ===== App toolbar ===== -->
+  <header class="app-bar">
+    <span class="brand">Page Editor</span>
+    <nav class="tabs">
+      <button class="tab active" data-view="page">Page</button>
+      <button class="tab" data-view="comments">Comments <span class="badge" id="badge-comments" hidden>0</span></button>
+      <button class="tab" data-view="compare">Compare <span class="badge" id="badge-changes" hidden>0</span></button>
+    </nav>
+    <span class="spacer"></span>
+    <label class="author"><span>You:</span><input type="text" id="author" placeholder="Your name" maxlength="40"></label>
+    <button class="btn" id="btn-edit" title="Toggle edit mode (E)">Edit</button>
+    <button class="btn" id="btn-comment" title="Toggle comment mode (C)">Comment</button>
+    <button class="btn" id="btn-export" title="Download edits.json — commit it to publish">Export</button>
+    <button class="btn" id="btn-import" title="Load an edits.json file">Import</button>
+    <button class="btn warn" id="btn-reset" title="Discard local changes">Reset</button>
+    <span class="status" id="status">saved</span>
+    <input type="file" id="file-import" accept="application/json" hidden>
+    <input type="file" id="file-image" accept="image/*" hidden>
+  </header>
+  <div class="mode-hint" id="mode-hint"></div>
+
+  <!-- ===== Outline sidebar ===== -->
+  <aside class="outline" id="outline">
+    <div class="o-head"><span>Outline</span><button id="outline-toggle" title="Hide outline">‹</button></div>
+    <nav id="outline-list"></nav>
+  </aside>
+  <button class="outline-show" id="outline-show" title="Show outline">☰</button>
+
+  <!-- ===== PAGE view ===== -->
+  <main class="view active" id="view-page">
+    <nav class="site-nav" id="site-nav"></nav>
+    <div class="wrap post-head" id="post-head"></div>
+    <div class="hero" id="hero"></div>
+    <article class="post-body" id="post-body"></article>
+    <footer class="site-footer" id="site-footer"></footer>
+  </main>
+
+  <!-- ===== COMMENTS view ===== -->
+  <section class="view panel" id="view-comments">
+    <h1>Comments</h1>
+    <p class="lede">General comments about the page, plus every comment pinned to a specific paragraph, table or image.</p>
+    <div class="new-comment">
+      <textarea id="general-comment" placeholder="Leave a general comment about the page…"></textarea>
+      <button id="btn-general-comment">Post comment</button>
+    </div>
+    <div class="filters">
+      <button class="active" data-filter="open">Open</button>
+      <button data-filter="resolved">Resolved</button>
+      <button data-filter="all">All</button>
+    </div>
+    <div id="comment-list"></div>
+  </section>
+
+  <!-- ===== COMPARE view ===== -->
+  <section class="view compare" id="view-compare">
+    <div class="compare-head">
+      <h1>What changed</h1>
+      <p class="lede">The page as it is now. Edited sections are marked — click one to see the reason that was typed when it was changed, plus a before/after snippet.</p>
+      <div class="stats" id="compare-stats"></div>
+      <div class="cmp-legend" id="cmp-legend"><span class="sw diff"></span> edited <span class="sw added"></span> added <span class="sw removed"></span> removed</div>
+      <div class="empty" id="cmp-empty">No changes yet — this is identical to the original. Use <b>Edit</b> on the Page tab to make some.</div>
+    </div>
+    <div id="cmp-page"></div>
+  </section>
+
+  <!-- ===== Modal ===== -->
+  <div class="modal-backdrop" id="modal"><div class="modal" id="modal-body"></div></div>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="content.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
