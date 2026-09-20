@@ -8,8 +8,8 @@
    governed by the row-level-security policies in supabase.sql.
    ------------------------------------------------------------------ */
 window.SITE_CONFIG = {
-  supabaseUrl: "",          // e.g. "https://abcdefghijklmnop.supabase.co"
-  supabaseAnonKey: "",      // Project Settings → API → anon public key
+  supabaseUrl: "https://kehpoavcnspbogfltkxa.supabase.co",
+  supabaseAnonKey: "sb_publishable_aDSehuQ59TTcicFZIS8UKg_5AuUvOlf",  // publishable key — safe to expose
   bucket: "images",         // Storage bucket for uploaded images
   editPasscode: ""          // optional: visitors must type this before editing/commenting
 };
