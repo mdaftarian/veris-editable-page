@@ -269,7 +269,7 @@
     switch (b.type) {
       case "h2": inner = `<h2${live ? ed(id, P + "html") : ""}>${b.html}</h2>`; break;
       case "h3": inner = `<h3${live ? ed(id, P + "html") : ""}>${b.html}</h3>`; break;
-      case "p": inner = `<p${live ? ed(id, P + "html") : ""}>${b.html}</p>`; break;
+      case "p": inner = `<div class="p"${live ? ed(id, P + "html") : ""}>${b.html}</div>`; break;
       case "code": inner = `<pre class="codeblock"${live ? ed(id, P + "html") : ""}>${esc(b.html)}</pre>`; break;
       case "context":
         inner = `<div class="context"><div class="ctx-title"${live ? ed(id, P + "title") : ""}>${b.title}</div><div${live ? ed(id, P + "html") : ""}>${b.html}</div></div>`; break;
@@ -311,7 +311,7 @@
     const changed = live && isChanged(id) ? `<span class="changed-marker" title="Edited"></span>` : "";
     return `<div class="block" data-block="${id}">${changed}${tools}${pin}${inner}</div>`;
   }
-  const insertButtons = `<button data-ins="h2">+ Title</button><button data-ins="h3">+ Subtitle</button><button data-ins="p">+ Text</button><button data-ins="image">+ Image</button>`;
+  const insertButtons = `<button data-ins="h2">+ Title</button><button data-ins="h3">+ Subtitle</button><button data-ins="p">+ Text</button><button data-ins="list">+ Bullets</button><button data-ins="image">+ Image</button>`;
   const insertBar = (idx) => `<div class="insert-bar" data-idx="${idx}"><div class="plus">${insertButtons}</div></div>`;
   function renderParked() {
     const list = state.parked || [];
@@ -388,7 +388,36 @@
   function beginEdit(el) {
     if (editing && editing.el !== el) commitEdit();
     editing = { el, blockId: el.dataset.edit, field: el.dataset.field, before: el.innerHTML };
+    showFmtBar(el);
   }
+  // ---- small formatting toolbar (bold, italic, lists, link) shown above the text being edited
+  function fmtBar() {
+    let bar = $("#fmtbar");
+    if (bar) return bar;
+    bar = document.createElement("div"); bar.id = "fmtbar"; bar.className = "fmtbar";
+    bar.innerHTML = `<button data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button><button data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button><button data-cmd="insertUnorderedList" title="Bulleted list">• List</button><button data-cmd="insertOrderedList" title="Numbered list">1. List</button><button data-cmd="link" title="Add link">Link</button><button data-cmd="removeFormat" title="Clear formatting">Clear</button>`;
+    bar.addEventListener("mousedown", (e) => e.preventDefault()); // keep the selection in the text
+    bar.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-cmd]"); if (!b || !editing) return;
+      const cmd = b.dataset.cmd;
+      if (cmd === "link") { const url = prompt("Link address (https://…):"); if (url) document.execCommand("createLink", false, url); }
+      else if (cmd === "removeFormat") { document.execCommand("removeFormat", false, null); document.execCommand("unlink", false, null); }
+      else document.execCommand(cmd, false, null);
+      editing.el.focus();
+    });
+    document.body.appendChild(bar);
+    return bar;
+  }
+  function showFmtBar(el) {
+    const isText = el.tagName === "DIV" && el.classList.contains("p") || el.closest(".context") && el.dataset.field.endsWith("html") || el.closest(".quotebox .content") || el.tagName === "LI" || el.tagName === "FIGCAPTION";
+    const bar = fmtBar();
+    if (!isText) { bar.hidden = true; return; }
+    const r = el.getBoundingClientRect();
+    bar.hidden = false;
+    bar.style.top = Math.max(50, r.top + window.scrollY - 38) + "px";
+    bar.style.left = Math.max(8, r.left + window.scrollX) + "px";
+  }
+  function hideFmtBar() { const bar = $("#fmtbar"); if (bar) bar.hidden = true; }
   function readValue(el, blockId, field) {
     let b = targetObj(blockId); let f = field;
     const m = f.match(/^((?:children\.\d+\.)+)(.*)$/); if (m && b) { b = getPath(b, m[1].slice(0, -1)); f = m[2]; }
@@ -397,13 +426,15 @@
     // sanitize a little: strip scripts/handlers
     const d = document.createElement("div"); d.innerHTML = el.innerHTML;
     $$("script,style,iframe", d).forEach((n) => n.remove());
-    $$("*", d).forEach((n) => Array.from(n.attributes).forEach((a) => { if (/^on/i.test(a.name)) n.removeAttribute(a.name); }));
+    $$("*", d).forEach((n) => Array.from(n.attributes).forEach((a) => { if (/^on/i.test(a.name) || (a.name === "href" && /^\s*javascript:/i.test(a.value))) n.removeAttribute(a.name); }));
+    $$("a", d).forEach((a) => { a.target = "_blank"; a.rel = "noopener"; });
     // remove editing attrs that may have been copied
     $$("[data-edit],[contenteditable]", d).forEach((n) => { n.removeAttribute("data-edit"); n.removeAttribute("data-field"); n.removeAttribute("contenteditable"); });
     return d.innerHTML.trim();
   }
 
   function commitEdit() {
+    hideFmtBar();
     if (!editing) return;
     const { el, blockId, field, before } = editing; editing = null;
     if (!document.body.contains(el)) return;
@@ -471,8 +502,8 @@
 
   // ---- add / delete / move blocks
   function addBlock(idx, type) {
-    const id = type + "-" + uid();
-    const b = type === "image" ? { id, type, src: "", alt: "", caption: "Caption" } : type === "h2" ? { id, type, html: "New title" } : type === "h3" ? { id, type, html: "New subtitle" } : { id, type: "p", html: "New text — click to edit." };
+    const id = (type === "list" ? "p" : type) + "-" + uid();
+    const b = type === "image" ? { id, type, src: "", alt: "", caption: "Caption" } : type === "h2" ? { id, type, html: "New title" } : type === "h3" ? { id, type, html: "New subtitle" } : type === "list" ? { id, type: "p", html: "<ul><li>First point</li><li>Second point</li><li>Third point</li></ul>" } : { id, type: "p", html: "New text — click to edit." };
     state.doc.blocks.splice(idx, 0, b);
     recordChange({ blockId: id, field: "*", kind: "add", before: null, after: b, note: "" });
     save(); renderPage();
@@ -732,7 +763,7 @@
     document.body.classList.toggle("commenting", mode === "comment");
     $("#btn-edit").classList.toggle("on", mode === "edit");
     $("#btn-comment").classList.toggle("on", mode === "comment");
-    $("#mode-hint").textContent = mode === "edit" ? "EDIT MODE — click any text to edit it, click an image to replace it, hover between blocks to add one. Click away to save." : mode === "comment" ? "COMMENT MODE — click any paragraph, table, chart or image to open its comment thread." : "";
+    $("#mode-hint").textContent = mode === "edit" ? "EDIT MODE — click any text to edit it (a small toolbar gives bold, italic, bullets and links), click an image to replace it, hover between blocks to add one. Click away to save." : mode === "comment" ? "COMMENT MODE — click any paragraph, table, chart or image to open its comment thread." : "";
     $$("[data-edit]").forEach((el) => { el.contentEditable = mode === "edit" ? "true" : "false"; el.spellcheck = false; });
     $$("#view-page details.group").forEach((d) => { const b = blockById(state.doc, d.closest("[data-block]").dataset.block); d.open = mode === "edit" ? true : !!(b && b.open); });
   }
@@ -791,7 +822,9 @@
     page.addEventListener("focusout", (e) => { if (editing && e.target === editing.el) setTimeout(() => { if (editing && editing.el === e.target && !$("#modal").classList.contains("open")) commitEdit(); }, 10); });
     page.addEventListener("keydown", (e) => {
       if (!editing) return;
-      if (e.key === "Escape") { editing.el.innerHTML = editing.before; editing = null; e.target.blur(); }
+      if (e.key === "Escape") { editing.el.innerHTML = editing.before; editing = null; hideFmtBar(); e.target.blur(); }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") { e.preventDefault(); document.execCommand("bold"); }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "i") { e.preventDefault(); document.execCommand("italic"); }
       if (e.key === "Enter" && !e.shiftKey && /^(H1|H2|H3|SPAN|B|FIGCAPTION)$/.test(e.target.tagName)) { e.preventDefault(); e.target.blur(); }
     });
     page.addEventListener("paste", (e) => { if (!editing) return; e.preventDefault(); document.execCommand("insertText", false, (e.clipboardData || window.clipboardData).getData("text")); });

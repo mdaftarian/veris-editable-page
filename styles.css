@@ -144,7 +144,15 @@ body:not(.outline-hidden) #view-page, body:not(.outline-hidden) #view-comments, 
 .post-body { max-width: var(--article); margin: 0 auto; padding: 60px 16px 40px; color: var(--text); font-size: 17px; line-height: 1.6; }
 .post-body h2 { font-size: 32px; line-height: 1.15; font-weight: 400; color: var(--text); margin: 56px 0 18px; }
 .post-body h3 { font-size: 24px; line-height: 1.25; font-weight: 400; color: var(--text); margin: 36px 0 12px; }
-.post-body p { margin: 0 0 20px; }
+.post-body p, .post-body .p { margin: 0 0 20px; }
+.post-body .p ul, .post-body .p ol, .context ul, .context ol, .quotebox .content ul, .quotebox .content ol { margin: 8px 0 8px 4px; padding-left: 22px; }
+.post-body .p li { margin-bottom: 6px; }
+.post-body .p a { color: var(--veris); text-decoration: underline; }
+
+/* formatting toolbar */
+.fmtbar { position: absolute; z-index: 60; display: flex; gap: 2px; background: #101817; border: 1px solid #34423f; border-radius: 4px; padding: 3px; box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+.fmtbar button { font-family: var(--mono); font-size: 11px; color: #e8ecea; background: transparent; border: 1px solid transparent; border-radius: 3px; padding: 3px 8px; cursor: pointer; }
+.fmtbar button:hover { background: #2a3937; border-color: #34423f; }
 .post-body .caption { font-size: 13px; color: var(--muted); font-family: var(--mono); line-height: 1.5; padding: 12px 16px; border-bottom: 1px solid var(--line); }
 
 .block { position: relative; }
